@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: codex
+      POSTGRES_USER: codex
+      POSTGRES_PASSWORD: local-codex-password-change-me
+    ports: ["5432:5432"]
+    volumes: ["codex_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codex -d codex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://codex:local-codex-password-change-me@db:5432/codex
+      JWT_SECRET: local-only-change-this-before-deploy
+      FRONTEND_ORIGINS: http://localhost:5173
+      JUDGE0_API_URL: https://ce.judge0.com
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  codex_pg:
